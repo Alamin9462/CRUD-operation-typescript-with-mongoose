@@ -1,4 +1,4 @@
-# CRUD-operation-typescript-with-mongoose
+# CRUD-operation-typescript-with-mongoose-other
 Project Setup:
 Create an Express project with TypeScript.
 Set up a MongoDB database to store Products (books) and Orders.

@@ -48,3 +48,25 @@ export const assignParcelsToAgent = async (
     { new: true }
   );
 };
+
+
+export const getAssignedParcelsByAgent = async (agentId: string) => {
+  const agent = await User.findById(agentId)
+    .populate({
+      path: "agentProfile.assignedParcels",
+      populate: {
+        path: "customer", 
+        model: "User", 
+        select: "name phone email", 
+      },
+    });
+
+  if (!agent) {
+    return null;
+  }
+
+  return agent.agentProfile?.assignedParcels ?? null;
+};
+
+
+

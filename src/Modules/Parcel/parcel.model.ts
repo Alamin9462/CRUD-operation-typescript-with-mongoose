@@ -9,7 +9,7 @@ export interface IParcel extends Document {
   status: 'Pending' | 'Picked Up' | 'In Transit' | 'Delivered' | 'Failed';
   type: 'small' | 'medium' | 'large';
   isCOD: boolean;
-  amount: number;
+  amount?: number;
   currentLocation?: {
     lat: number;
     lng: number;
@@ -34,7 +34,7 @@ const parcelSchema = new Schema<IParcel>(
       default: 'small',
     },
     isCOD: { type: Boolean, default: true },
-    amount: { type: Number, required: true },
+    amount: { type: Number, default: 0 },
     currentLocation: {
       lat: { type: Number },
       lng: { type: Number },

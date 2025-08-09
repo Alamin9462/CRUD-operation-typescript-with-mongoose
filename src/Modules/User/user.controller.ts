@@ -5,6 +5,8 @@ import * as userService from './user.service';
 import catchAsync from '../../utils/catchAsync';
 import sendResponse from '../../utils/sendResponse';
 import httpStatus from 'http-status';
+import { User } from './user.model';
+import Parcel from '../Parcel/parcel.model';
 
 // Create a new user
 export const createUser = catchAsync(async (req: Request, res: Response) => {
@@ -83,26 +85,90 @@ export const deactivateUser = catchAsync(async (req: Request, res: Response) => 
 
 // Assign parcels to a delivery agent
 
-export const assignParcelsToAgent = catchAsync(async (req: Request, res: Response) => {
-  const { agentId, parcelIds } = req.body;
-  if (!agentId || !parcelIds) {
-    return res.status(httpStatus.BAD_REQUEST).json({
-      success: false,
-      message: 'agentId and parcelIds are required',
+
+export const assignParcelsToAgent = async (req: Request, res: Response) => {
+  try {
+    const { agentId, parcelIds } = req.body;
+
+    if (!agentId || !parcelIds || !parcelIds.length) {
+      return res.status(400).json({ success: false, message: "Agent ID and parcel IDs are required" });
+    }
+ 
+    const agent = await User.findByIdAndUpdate(
+      agentId,
+      { $addToSet: { 'agentProfile.assignedParcels': { $each: parcelIds } } },
+      { new: true }
+    );
+
+    if (!agent) {
+      return res.status(404).json({ success: false, message: "Agent not found" });
+    }
+
+    await Parcel.updateMany(
+      { _id: { $in: parcelIds } },
+      { $set: { agent: agentId } }
+    );
+
+    return res.status(200).json({
+      success: true,
+      message: "Parcels assigned to agent successfully",
+      data: agent,
     });
+  } catch (error) {
+    console.error("Error assigning parcels:", error);
+    return res.status(500).json({ success: false, message: "Server error" });
   }
-  // Call the service to assign parcels to the agent
-  const user = await userService.assignParcelsToAgent(agentId, parcelIds);
-  if (!user) {
+};
+
+
+
+// Get assigned parcels of a specific agent
+export const getAssignedParcelsByAgent = catchAsync(async (req: Request, res: Response) => {
+  const { agentId } = req.params;
+
+  const parcels = await userService.getAssignedParcelsByAgent(agentId);
+
+  if (!parcels || parcels.length === 0) {
     return res.status(httpStatus.NOT_FOUND).json({
       success: false,
-      message: 'Agent not found',
+      message: 'No parcels found for this agent',
     });
   }
+
   sendResponse(res, {
     statusCode: httpStatus.OK,
     success: true,
-    message: 'Parcels assigned to agent successfully',
-    data: user,
+    message: 'Parcels retrieved successfully',
+    data: parcels,
+  });
+});
+
+
+// In user.controller.ts
+export const updateAgentLocation = catchAsync(async (req: Request, res: Response) => {
+  const user = (req as any).user;
+  if (!user || user.role !== 'delivery_agent') {
+    return sendResponse(res, {
+      statusCode: httpStatus.FORBIDDEN,
+      success: false,
+      message: 'Only delivery agents can update their location',
+    });
+  }
+  const { lat, lng } = req.body;
+  if (typeof lat !== 'number' || typeof lng !== 'number') {
+    return sendResponse(res, {
+      statusCode: httpStatus.BAD_REQUEST,
+      success: false,
+      message: 'lat and lng must be numbers',
+    });
+  }
+  const updatedUser = await userService.updateUser(user._id, {
+    location: { lat, lng, updatedAt: new Date() }
+  });
+  sendResponse(res, {
+    statusCode: httpStatus.OK,
+    success: true,
+    message: 'Agent location updated successfully',
+    data: updatedUser,
   });
 });

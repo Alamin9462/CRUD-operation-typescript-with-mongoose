@@ -21,7 +21,7 @@ const createParcel = async (payload: Partial<IParcel>): Promise<IParcel> => {
 
 // Get all parcels, optionally filtered
 const getParcels = async (filter: any = {}) => {
-  return await Parcel.find(filter);
+  return await Parcel.find(filter).populate("customer agent");
 };
 
 // Get a single parcel by ID

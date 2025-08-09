@@ -10,7 +10,9 @@ const app: Application = express();
 // parser
 app.use(express.json());
 app.use(cookieParser());
-app.use(cors({ origin: "http://localhost:5173", credentials: true }));
+// app.use(cors({ origin: "http://localhost:5173", credentials: true }));
+
+app.use(cors({ origin: "https://courier-parcel-client.vercel.app", credentials: true }));
 
 app.use("/api/auth", authRouter);
 app.use("/api/parcel", parcleRouter);
